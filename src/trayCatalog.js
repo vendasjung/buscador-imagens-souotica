@@ -32,11 +32,15 @@ export function buildTrayDrafts(savwinRows,referenceRows,referenceColumns){
   set('Estoque atual',number(read(r,['Quantidade','Estoque'])));
   set('Característica: Marca',brand);
   if(cat){set('Código categoria',cat.id);set('Nome categoria',cat.name);}
-  // Do not copy identifiers, SEO, photos, physical dimensions or product characteristics from unrelated products.
+  // Standard shipping measurements apply only to eyewear and never overwrite existing product values.
+  if(cat&&cat!==CATEGORIES.RELOGIO){for(const [field,value] of Object.entries({'Peso':'400','Comprimento':'15','Largura':'15','Altura':'15'})){if(!text(draft[field]))set(field,value);}}
+  // Product-specific attributes are only populated from explicit SavWin fields; never guessed from another product.
+  for(const [field,aliases] of Object.entries({'Característica: Formato':['Formato','Formato Armação','Formato da Armação'],'Característica: Material':['Material','Material Armação','Material da Armação'],'Característica: Gênero':['Gênero','Genero','Sexo','Público']})){if(!text(draft[field]))set(field,read(r,aliases));}
   const missing=[];
   if(!sku)missing.push('Código');if(!brand)missing.push('Grife');if(!model)missing.push('Modelo');if(!color)missing.push('Cor Numérica');if(!cat)missing.push('Categoria não reconhecida');
   if(!draft['Imagem principal'])missing.push('Imagem principal');
   if(!draft['Descrição grande'])missing.push('Descrição');
+  if(cat&&cat!==CATEGORIES.RELOGIO){for(const field of ['Característica: Formato','Característica: Material','Característica: Gênero'])if(!draft[field])missing.push(field.replace('Característica: ',''));}
   return {id:index+1,sku,brand,model,color,colorName,size,category:cat?.name||'',draft,missing,ready:missing.length===0};
  });
 }
